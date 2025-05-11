@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Map;
 
 import org.yaml.snakeyaml.DumperOptions;
@@ -17,6 +18,7 @@ public class YamlConfig {
 	Addon addon;
 	String yamlName;
 	Map<String, Object> values;
+	public boolean encryptString = false;
 	
 	public YamlConfig(Addon addon, String yamlName) {
 		this.addon = addon;
@@ -24,12 +26,33 @@ public class YamlConfig {
 	}
 	
 	public void setKey(String key, Object object) {
+		if (this.encryptString == true) {
+			if (object instanceof String) {
+				byte[] valueBytes = ((String) object).getBytes();
+				byte[] keyBytes = key.getBytes();
+				
+				this.values.put(Base64.getEncoder().encodeToString(keyBytes), Base64.getEncoder().encodeToString(valueBytes));
+				return ;
+			}
+		}
+		
 	    this.values.put(key, object);
 	}
 
 	
 	public Object getKey(String key) {
-		return this.values.get(key);
+		if (this.encryptString == true) {
+			byte[] keyBytes = key.getBytes();
+			String encryptedKey = Base64.getEncoder().encodeToString(keyBytes);
+			
+			String base64Result = (String) this.values.get(encryptedKey);
+			String finalResult = new String(Base64.getDecoder().decode(base64Result));
+			
+			return finalResult;
+		}
+		else {
+			return this.values.get(key);
+		}
 	}
 	
 	public void saveConfig() {		
